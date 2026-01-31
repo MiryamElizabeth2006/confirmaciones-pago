@@ -1,0 +1,74 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "resources": [
+    {
+      "_type": "request_group",
+      "_id": "fld_confirmacion_pago",
+      "name": "Confirmación de Pago",
+      "environment": {}
+    },
+    {
+      "_type": "request",
+      "_id": "req_opciones",
+      "parentId": "fld_confirmacion_pago",
+      "name": "GET Opciones (estudiantes y generaciones)",
+      "method": "GET",
+      "url": "http://localhost:3000/confirmacion-pago/opciones",
+      "body": {},
+      "headers": []
+    },
+    {
+      "_type": "request",
+      "_id": "req_validar",
+      "parentId": "fld_confirmacion_pago",
+      "name": "POST Validar pago (comprobante)",
+      "method": "POST",
+      "url": "http://localhost:3000/confirmacion-pago/validar",
+      "body": {
+        "mimeType": "multipart/form-data",
+        "params": [
+          {
+            "name": "estudiante",
+            "value": "Nombre del estudiante",
+            "type": "text",
+            "disabled": false
+          },
+          {
+            "name": "generacion",
+            "value": "generacion 1",
+            "type": "text",
+            "disabled": false
+          },
+          {
+            "name": "comprobante",
+            "value": "",
+            "type": "file",
+            "fileName": "",
+            "disabled": false
+          }
+        ]
+      },
+      "headers": []
+    },
+    {
+      "_type": "request",
+      "_id": "req_validar_json",
+      "parentId": "fld_confirmacion_pago",
+      "name": "POST Validar pago (JSON + base64)",
+      "method": "POST",
+      "url": "http://localhost:3000/confirmacion-pago/validar-json",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"estudiante\": \"Nombre del estudiante\",\n  \"generacion\": \"generacion 1\",\n  \"comprobanteBase64\": \"PEGA_AQUI_LA_IMAGEN_EN_BASE64\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json",
+          "disabled": false
+        }
+      ]
+    }
+  ]
+}
