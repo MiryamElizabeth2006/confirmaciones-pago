@@ -59,32 +59,32 @@ export function ResultadoValidacionComponent({ resultado }: ResultadoValidacionP
       )}
 
       {resultado.coincidenciaExcel && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-red-900 mb-3">
             Coincidencia en el Registro
           </h3>
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <dt className="text-sm font-medium text-blue-700">Estudiante</dt>
-              <dd className="mt-1 text-sm text-blue-900">
+              <dt className="text-sm font-medium text-red-700">Estudiante</dt>
+              <dd className="mt-1 text-sm text-red-900">
                 {resultado.coincidenciaExcel.estudiante}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-blue-700">Generación</dt>
-              <dd className="mt-1 text-sm text-blue-900">
+              <dt className="text-sm font-medium text-red-700">Generación</dt>
+              <dd className="mt-1 text-sm text-red-900">
                 {resultado.coincidenciaExcel.generacion}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-blue-700">Número de Transacción</dt>
-              <dd className="mt-1 text-sm text-blue-900">
+              <dt className="text-sm font-medium text-red-700">Número de Transacción</dt>
+              <dd className="mt-1 text-sm text-red-900">
                 {resultado.coincidenciaExcel.numeroTransaccion}
               </dd>
             </div>
             <div>
-              <dt className="text-sm font-medium text-blue-700">Monto</dt>
-              <dd className="mt-1 text-sm text-blue-900">
+              <dt className="text-sm font-medium text-red-700">Monto</dt>
+              <dd className="mt-1 text-sm text-red-900">
                 ${resultado.coincidenciaExcel.monto.toFixed(2)}
               </dd>
             </div>
