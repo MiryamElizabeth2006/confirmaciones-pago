@@ -7,7 +7,7 @@ import type { ResultadoValidacion } from '@/types/api';
 
 export interface ValidarPagoParams {
   estudiante: string;
-  generacion: string;
+  modulo: string;
   comprobante: File;
 }
 
@@ -18,7 +18,7 @@ export class ValidacionService {
   async validarPago(params: ValidarPagoParams): Promise<ResultadoValidacion> {
     return apiClient.validarPago({
       estudiante: params.estudiante,
-      generacion: params.generacion,
+      modulo: params.modulo,
       comprobante: params.comprobante,
     });
   }

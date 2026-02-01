@@ -18,15 +18,12 @@ export function validateEstudiante(estudiante: string): string | null {
 }
 
 /**
- * Valida que una generación sea válida
+ * Valida que un módulo sea válido
  */
-export function validateGeneracion(generacion: string): string | null {
-  const trimmed = generacion.trim();
+export function validateModulo(modulo: string): string | null {
+  const trimmed = modulo.trim();
   if (!trimmed) {
-    return 'Por favor seleccione una generación';
-  }
-  if (!GENERACIONES.includes(trimmed as Generacion)) {
-    return 'La generación debe ser entre generacion 1 y generacion 5';
+    return 'Por favor seleccione un módulo';
   }
   return null;
 }
@@ -58,13 +55,13 @@ export function validateFile(file: File | null): string | null {
  */
 export interface FormValidationErrors {
   estudiante?: string;
-  generacion?: string;
+  modulo?: string;
   comprobante?: string;
 }
 
 export function validateForm(data: {
   estudiante: string;
-  generacion: string;
+  modulo: string;
   comprobante: File | null;
 }): FormValidationErrors {
   const errors: FormValidationErrors = {};
@@ -74,9 +71,9 @@ export function validateForm(data: {
     errors.estudiante = estudianteError;
   }
 
-  const generacionError = validateGeneracion(data.generacion);
-  if (generacionError) {
-    errors.generacion = generacionError;
+  const moduloError = validateModulo(data.modulo);
+  if (moduloError) {
+    errors.modulo = moduloError;
   }
 
   const fileError = validateFile(data.comprobante);

@@ -8,7 +8,8 @@
  */
 export interface OpcionesSelect {
   readonly estudiantes: string[];
-  readonly generaciones: readonly string[];
+  readonly modulos: string[];
+  readonly generaciones?: readonly string[]; // Mantener para compatibilidad
 }
 
 /**

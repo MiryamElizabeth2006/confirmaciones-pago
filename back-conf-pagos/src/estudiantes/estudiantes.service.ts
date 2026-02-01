@@ -73,6 +73,27 @@ export class EstudiantesService {
   }
 
   /**
+   * Obtiene todos los módulos disponibles
+   */
+  async obtenerModulos() {
+    const modulos = await this.prisma.modulo.findMany({
+      select: {
+        id: true,
+        nombre: true,
+        monto: true,
+      },
+      orderBy: {
+        nombre: 'asc',
+      },
+    });
+    return modulos.map((m) => ({
+      id: m.id,
+      nombre: m.nombre,
+      monto: Number(m.monto),
+    }));
+  }
+
+  /**
    * Obtiene un estudiante por su nombre
    */
   async obtenerPorNombre(nombre: string) {

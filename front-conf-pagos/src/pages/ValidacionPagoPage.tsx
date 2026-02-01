@@ -17,13 +17,13 @@ export function ValidacionPagoPage() {
   const { data: opciones, loading: loadingOpciones, error: errorOpciones } = useOpciones();
   const { status, data: resultado, error: errorValidacion, validar, reset } = useValidarPago();
   const [estudiante, setEstudiante] = useState('');
-  const [generacion, setGeneracion] = useState('');
+  const [modulo, setModulo] = useState('');
   const [comprobante, setComprobante] = useState<File | null>(null);
   const [notas, setNotas] = useState('');
   const [errors, setErrors] = useState<FormValidationErrors>({});
 
   const isLoading = loadingOpciones || status === 'loading';
-  const canSubmit = !isLoading && estudiante && generacion && comprobante;
+  const canSubmit = !isLoading && estudiante && modulo && comprobante;
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,7 +31,7 @@ export function ValidacionPagoPage() {
     // Validar formulario
     const validationErrors = validateForm({
       estudiante,
-      generacion,
+      modulo,
       comprobante,
     });
 
@@ -47,13 +47,14 @@ export function ValidacionPagoPage() {
     try {
       const resultado = await validar({
         estudiante,
-        generacion,
+        modulo,
         comprobante: comprobante!,
       });
       
       // Guardar el resultado para que el ADMIN pueda verlo
+      // Usar módulo como generación para compatibilidad con storage
       if (resultado) {
-        guardarValidacion(estudiante, generacion, resultado);
+        guardarValidacion(estudiante, modulo, resultado);
       }
     } catch (error) {
       // El error ya está manejado en el hook
@@ -63,7 +64,7 @@ export function ValidacionPagoPage() {
 
   const handleReset = () => {
     setEstudiante('');
-    setGeneracion('');
+    setModulo('');
     setComprobante(null);
     setNotas('');
     setErrors({});
@@ -73,8 +74,8 @@ export function ValidacionPagoPage() {
   // Preparar opciones para los selects
   const estudianteOptions =
     opciones?.estudiantes.map((est) => ({ value: est, label: est })) || [];
-  const generacionOptions =
-    opciones?.generaciones.map((gen) => ({ value: gen, label: gen })) || [];
+  const moduloOptions =
+    opciones?.modulos.map((mod) => ({ value: mod, label: mod })) || [];
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -109,21 +110,21 @@ export function ValidacionPagoPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Campos en grid de 2 columnas */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Generación */}
+                  {/* Módulo */}
                   <Select
-                    label="Generación"
-                    value={generacion}
+                    label="Módulo"
+                    value={modulo}
                     onChange={(e) => {
-                      setGeneracion(e.target.value);
-                      if (errors.generacion) {
-                        setErrors({ ...errors, generacion: undefined });
+                      setModulo(e.target.value);
+                      if (errors.modulo) {
+                        setErrors({ ...errors, modulo: undefined });
                       }
                     }}
-                    options={generacionOptions}
-                    placeholder="Selecciona una generación"
+                    options={moduloOptions}
+                    placeholder="Selecciona un módulo"
                     required
                     disabled={isLoading || !opciones}
-                    error={errors.generacion}
+                    error={errors.modulo}
                     className="bg-white border-gray-300 focus:border-red-500 focus:ring-red-500"
                   />
 
@@ -163,20 +164,6 @@ export function ValidacionPagoPage() {
                   />
                 </div>
 
-                {/* Notas opcionales */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">
-                    Notas (Opcional)
-                  </label>
-                  <textarea
-                    value={notas}
-                    onChange={(e) => setNotas(e.target.value)}
-                    placeholder="Información adicional sobre el pago..."
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none transition-all"
-                    disabled={isLoading}
-                  />
-                </div>
 
                 {/* Error de validación */}
                 {errorValidacion && (

@@ -90,12 +90,12 @@ export const apiClient = {
    */
   async validarPago(data: {
     estudiante: string;
-    generacion: string;
+    modulo: string;
     comprobante: File;
   }) {
     const formData = new FormData();
     formData.append('estudiante', data.estudiante.trim());
-    formData.append('generacion', data.generacion.trim());
+    formData.append('modulo', data.modulo.trim());
     formData.append('comprobante', data.comprobante);
 
     return request<import('@/types/api').ResultadoValidacion>(

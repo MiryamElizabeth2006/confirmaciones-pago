@@ -32,12 +32,14 @@ export class ConfirmacionPagoController {
 
   @Get('opciones')
   async opciones() {
-    // Obtener estudiantes desde Prisma
+    // Obtener estudiantes y módulos desde Prisma
     const nombresEstudiantes = await this.estudiantesService.obtenerNombres();
+    const modulos = await this.estudiantesService.obtenerModulos();
     
     return {
       estudiantes: nombresEstudiantes,
-      generaciones: GENERACIONES,
+      modulos: modulos.map((m) => m.nombre), // Solo devolver los nombres de los módulos
+      generaciones: GENERACIONES, // Mantener para compatibilidad
     };
   }
 
@@ -66,7 +68,7 @@ export class ConfirmacionPagoController {
     }),
   )
   async validar(
-    @Body() body: { estudiante?: string; generacion?: string },
+    @Body() body: { estudiante?: string; generacion?: string; modulo?: string },
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file?.buffer) {
@@ -74,16 +76,31 @@ export class ConfirmacionPagoController {
     }
 
     const estudiante = (body.estudiante ?? '').trim();
-    const generacion = (body.generacion ?? '').trim() as Generacion;
+    const modulo = (body.modulo ?? '').trim();
+    let generacion = (body.generacion ?? '').trim() as Generacion;
 
     if (!estudiante) {
       throw new BadRequestException('El nombre del estudiante es requerido.');
     }
 
-    if (!GENERACIONES.includes(generacion)) {
-      throw new BadRequestException(
-        'La generación debe ser entre generacion 1 y generacion 5.',
-      );
+    // Si se envía módulo, obtener la generación del estudiante desde la BD
+    if (modulo && !generacion) {
+      const estudianteEncontrado = await this.estudiantesService.obtenerPorNombre(estudiante);
+      if (estudianteEncontrado) {
+        generacion = estudianteEncontrado.generacion as Generacion;
+      }
+    }
+
+    // Si no hay generación válida, obtenerla del estudiante desde la BD
+    if (!generacion || !GENERACIONES.includes(generacion)) {
+      const estudianteEncontrado = await this.estudiantesService.obtenerPorNombre(estudiante);
+      if (estudianteEncontrado) {
+        generacion = estudianteEncontrado.generacion as Generacion;
+      } else {
+        throw new BadRequestException(
+          'No se pudo determinar la generación del estudiante.',
+        );
+      }
     }
 
     return this.validarPagoUseCase.ejecutar(
