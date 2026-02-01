@@ -50,16 +50,20 @@ model ComprobantePago {
 }
 
 model HistorialPago {
-  id            String          @id @default(uuid()) @db.Uuid
-  estudianteId  String          @db.Uuid
-  moduloId      String          @db.Uuid
-  comprobanteId String          @db.Uuid
-  montoAbonado  Decimal         @db.Decimal(10, 2)
-  fechaAbono    DateTime        @default(now())
-  createdAt     DateTime        @default(now())
-  comprobante   ComprobantePago @relation(fields: [comprobanteId], references: [id])
-  estudiante    Estudiante      @relation(fields: [estudianteId], references: [id])
-  modulo        Modulo          @relation(fields: [moduloId], references: [id])
+  id             String   @id @default(uuid()) @db.Uuid
+
+  estudianteId   String   @db.Uuid
+  moduloId       String   @db.Uuid
+  comprobanteId  String   @db.Uuid
+
+  estudiante     Estudiante     @relation(fields: [estudianteId], references: [id])
+  modulo         Modulo         @relation(fields: [moduloId], references: [id])
+  comprobante    ComprobantePago @relation(fields: [comprobanteId], references: [id])
+
+  montoAbonado   Decimal  @db.Decimal(10,2)
+  fechaAbono     DateTime @default(now())
+
+  createdAt      DateTime @default(now())
 }
 
 enum EstadoConfirmacion {

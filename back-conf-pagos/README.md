@@ -28,6 +28,8 @@ Backend de **confirmación de pagos** con NestJS en **arquitectura hexagonal**. 
 ### Configuración
 
 1. Copia `.env.example` a `.env` y define:
+   - **DATABASE_URL**: URL de PostgreSQL (ej. `postgresql://usuario:password@localhost:5432/confirmaciones_pago`).
+   - **ADMIN_API_KEY**: Clave para el área de administrador (obligatoria para las rutas `/admin/*`). El front pide esta clave para entrar al panel de administración.
    - **VISION_PROVIDER**: `textract` (por defecto, AWS gratuito), `mock` o `openai`.
    - **AWS_ACCESS_KEY_ID** y **AWS_SECRET_ACCESS_KEY** (y opcionalmente **AWS_REGION**) para AWS Textract.
    - **EXCEL_PAGOS_PATH** (opcional): ruta al Excel. Por defecto: `./data/pagos.xlsx`.
@@ -56,6 +58,43 @@ Backend de **confirmación de pagos** con NestJS en **arquitectura hexagonal**. 
 ```bash
 $ npm install
 ```
+
+## Prisma (base de datos)
+
+El proyecto usa **Prisma 7** con PostgreSQL. Para levantar Prisma:
+
+1. **Crea el archivo `.env`** (si no existe) y define `DATABASE_URL`:
+   ```env
+   DATABASE_URL="postgresql://usuario:password@localhost:5432/confirmaciones_pago"
+   ```
+
+2. **Instala `dotenv`** (necesario para que la CLI de Prisma lea `.env`):
+   ```bash
+   npm install --save-dev dotenv
+   ```
+
+3. **Genera el cliente de Prisma**:
+   ```bash
+   npm run prisma:generate
+   ```
+
+4. **Crea la base de datos y aplica las migraciones** (con PostgreSQL corriendo):
+   ```bash
+   npm run prisma:migrate
+   ```
+   La primera vez te pedirá un nombre para la migración (ej. `init`).
+
+   **Alternativa:** si prefieres sincronizar el schema sin historial de migraciones:
+   ```bash
+   npm run prisma:push
+   ```
+
+5. **(Opcional)** Abre Prisma Studio para ver/editar datos:
+   ```bash
+   npm run prisma:studio
+   ```
+
+El **PrismaService** está registrado como módulo global: puedes inyectarlo en cualquier servicio con `constructor(private prisma: PrismaService) {}` y usar `this.prisma.estudiante`, `this.prisma.modulo`, etc.
 
 ## Compile and run the project
 

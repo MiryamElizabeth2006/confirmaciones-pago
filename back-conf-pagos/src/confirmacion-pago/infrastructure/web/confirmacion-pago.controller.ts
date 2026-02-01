@@ -12,7 +12,6 @@ import { memoryStorage } from 'multer';
 import { ValidarPagoUseCase } from '../../application/use-cases/validar-pago.use-case';
 import { ObtenerOpcionesSelectUseCase } from '../../application/use-cases/obtener-opciones-select.use-case';
 import { GENERACIONES, type Generacion } from '../../domain/constants/generaciones';
-import { EstudiantesService } from '../../../estudiantes/estudiantes.service';
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -27,18 +26,11 @@ export class ConfirmacionPagoController {
   constructor(
     private readonly validarPagoUseCase: ValidarPagoUseCase,
     private readonly obtenerOpcionesSelectUseCase: ObtenerOpcionesSelectUseCase,
-    private readonly estudiantesService: EstudiantesService,
   ) {}
 
   @Get('opciones')
   async opciones() {
-    // Obtener estudiantes desde Prisma
-    const nombresEstudiantes = await this.estudiantesService.obtenerNombres();
-    
-    return {
-      estudiantes: nombresEstudiantes,
-      generaciones: GENERACIONES,
-    };
+    return this.obtenerOpcionesSelectUseCase.ejecutar();
   }
 
   @Post('validar')
@@ -66,60 +58,88 @@ export class ConfirmacionPagoController {
     }),
   )
   async validar(
-    @Body() body: { estudiante?: string; generacion?: string },
+    @Body() body: { moduloId?: string; estudianteId?: string },
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file?.buffer) {
       throw new BadRequestException('Debe enviar la imagen del comprobante.');
     }
 
-    const estudiante = (body.estudiante ?? '').trim();
-    const generacion = (body.generacion ?? '').trim() as Generacion;
+    const moduloId = (body.moduloId ?? '').trim();
+    const estudianteId = (body.estudianteId ?? '').trim();
+
+    if (!moduloId) {
+      throw new BadRequestException('Debe seleccionar un módulo.');
+    }
+
+    if (!estudianteId) {
+      throw new BadRequestException('Debe seleccionar un estudiante.');
+    }
+
+    const estudiante = await this.prisma.estudiante.findUnique({
+      where: { id: estudianteId },
+    });
 
     if (!estudiante) {
-      throw new BadRequestException('El nombre del estudiante es requerido.');
+      throw new BadRequestException('Estudiante no encontrado.');
     }
 
-    if (!GENERACIONES.includes(generacion)) {
-      throw new BadRequestException(
-        'La generación debe ser entre generacion 1 y generacion 5.',
-      );
-    }
-
-    return this.validarPagoUseCase.ejecutar(
-      estudiante,
-      generacion,
+    const resultado = await this.validarPagoUseCase.ejecutar(
+      estudiante.nombre,
+      estudiante.generacion,
       file.buffer,
     );
+
+    if (resultado.datosExtraidos?.numeroTransaccion != null && resultado.datosExtraidos?.monto != null) {
+      const confirmacion: EstadoConfirmacion = resultado.valido ? 'REALIZADO' : 'NO_REALIZADO';
+      await this.guardarComprobante.ejecutar({
+        estudianteId,
+        moduloId,
+        imagenBuffer: file.buffer,
+        mimeType: file.mimetype,
+        numeroTransaccion: resultado.datosExtraidos.numeroTransaccion,
+        monto: resultado.datosExtraidos.monto,
+        fechaExtraida: resultado.datosExtraidos.fecha,
+        nombreCuentaDestino: resultado.datosExtraidos.nombreCuentaDestino,
+        confirmacionPago: confirmacion,
+      });
+    }
+
+    return resultado;
   }
 
   /**
    * POST /confirmacion-pago/validar-json
    * Alternativa para probar desde Insomnia con JSON: la imagen se envía en base64.
    * Body (application/json):
-   * { "estudiante": "...", "generacion": "generacion 1", "comprobanteBase64": "data:image/jpeg;base64,..." o solo "...base64..." }
+   * { "moduloId": "uuid", "estudianteId": "uuid", "comprobanteBase64": "data:image/jpeg;base64,..." }
    */
   @Post('validar-json')
   async validarJson(
     @Body()
     body: {
-      estudiante?: string;
-      generacion?: string;
+      moduloId?: string;
+      estudianteId?: string;
       comprobanteBase64?: string;
     },
   ) {
-    const estudiante = (body.estudiante ?? '').trim();
-    const generacion = (body.generacion ?? '').trim() as Generacion;
+    const estudianteId = (body.estudianteId ?? '').trim();
     const comprobanteBase64 = (body.comprobanteBase64 ?? '').trim();
 
-    if (!estudiante) {
-      throw new BadRequestException('El nombre del estudiante es requerido.');
+    if (!body.moduloId?.trim()) {
+      throw new BadRequestException('Debe seleccionar un módulo.');
     }
 
-    if (!GENERACIONES.includes(generacion)) {
-      throw new BadRequestException(
-        'La generación debe ser entre generacion 1 y generacion 5.',
-      );
+    if (!estudianteId) {
+      throw new BadRequestException('Debe seleccionar un estudiante.');
+    }
+
+    const estudiante = await this.prisma.estudiante.findUnique({
+      where: { id: estudianteId },
+    });
+
+    if (!estudiante) {
+      throw new BadRequestException('Estudiante no encontrado.');
     }
 
     if (!comprobanteBase64) {
@@ -135,7 +155,11 @@ export class ConfirmacionPagoController {
       );
     }
 
-    return this.validarPagoUseCase.ejecutar(estudiante, generacion, buffer);
+    return this.validarPagoUseCase.ejecutar(
+      estudiante.nombre,
+      estudiante.generacion,
+      buffer,
+    );
   }
 
   private base64ToBuffer(base64: string): Buffer | null {

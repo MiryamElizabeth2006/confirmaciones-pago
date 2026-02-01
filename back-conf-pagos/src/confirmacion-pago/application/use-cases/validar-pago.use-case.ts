@@ -4,7 +4,6 @@ import type { LeerPagosRegistradosPort } from '../../domain/ports/leer-pagos-reg
 import type { PagoRegistrado } from '../../domain/value-objects/pago-registrado.vo';
 import type { ResultadoValidacion } from '../../domain/value-objects/resultado-validacion.vo';
 import type { Generacion } from '../../domain/constants/generaciones';
-import { EstudiantesService } from '../../../estudiantes/estudiantes.service';
 import {
   EXTRAER_DATOS_COMPROBANTE_PORT,
   LEER_PAGOS_REGISTRADOS_PORT,
@@ -30,7 +29,7 @@ export class ValidarPagoUseCase {
 
   async ejecutar(
     estudiante: string,
-    generacion: Generacion,
+    generacion: string,
     imagenBuffer: Buffer,
   ): Promise<ResultadoValidacion> {
     let datosExtraidos;
