@@ -2,11 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ConfirmacionPagoController } from './infrastructure/web/confirmacion-pago.controller';
 import { ValidarPagoUseCase } from './application/use-cases/validar-pago.use-case';
-import { ObtenerOpcionesSelectUseCase } from './application/use-cases/obtener-opciones-select.use-case';
+import { ObtenerOpcionesDbUseCase } from './application/use-cases/obtener-opciones-db.use-case';
 import { AwsTextractAdapter } from './infrastructure/adapters/vision/aws-textract.adapter';
 import { OpenAIVisionAdapter } from './infrastructure/adapters/vision/openai-vision.adapter';
 import { MockVisionAdapter } from './infrastructure/adapters/vision/mock-vision.adapter';
 import { ExcelPagosAdapter } from './infrastructure/adapters/persistence/excel-pagos.adapter';
+import { GuardarComprobanteService } from './infrastructure/persistencia/guardar-comprobante.service';
 import {
   EXTRAER_DATOS_COMPROBANTE_PORT,
   LEER_PAGOS_REGISTRADOS_PORT,
@@ -17,7 +18,8 @@ import {
   controllers: [ConfirmacionPagoController],
   providers: [
     ValidarPagoUseCase,
-    ObtenerOpcionesSelectUseCase,
+    ObtenerOpcionesDbUseCase,
+    GuardarComprobanteService,
     AwsTextractAdapter,
     OpenAIVisionAdapter,
     MockVisionAdapter,
