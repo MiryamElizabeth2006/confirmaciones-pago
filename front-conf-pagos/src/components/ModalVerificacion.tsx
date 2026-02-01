@@ -1,10 +1,10 @@
 /**
  * Modal de verificación de comprobante para ADMIN
- * Reutiliza la lógica existente de validación
+ * Muestra el comprobante desde la base de datos y reconstruye el resultado de validación
  */
 
-import { useState, useEffect } from 'react';
-import { obtenerValidacionPorEstudiante } from '@/utils/storage';
+import { useMemo } from 'react';
+import type { ComprobantePago } from '@/types/api';
 import { ResultadoValidacionComponent } from './ResultadoValidacion';
 import { Button } from './Button';
 import { Alert } from './Alert';
@@ -15,6 +15,7 @@ interface ModalVerificacionProps {
   onClose: () => void;
   estudianteNombre?: string;
   estudianteGeneracion?: string;
+  comprobante?: ComprobantePago;
 }
 
 export function ModalVerificacion({
@@ -22,40 +23,51 @@ export function ModalVerificacion({
   onClose,
   estudianteNombre,
   estudianteGeneracion,
+  comprobante,
 }: ModalVerificacionProps) {
-  const [resultado, setResultado] = useState<import('@/types/api').ResultadoValidacion | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Reconstruir ResultadoValidacion desde los datos del comprobante
+  const resultado = useMemo(() => {
+    if (!comprobante) return null;
 
-  // Cargar resultado cuando se abre el modal
-  useEffect(() => {
-    if (isOpen && estudianteNombre && estudianteGeneracion) {
-      setLoading(true);
-      // Buscar el resultado guardado
-      const validacionGuardada = obtenerValidacionPorEstudiante(
-        estudianteNombre,
-        estudianteGeneracion,
-      );
-      
-      if (validacionGuardada) {
-        setResultado(validacionGuardada.resultado);
-      } else {
-        setResultado(null);
-      }
-      setLoading(false);
-    } else {
-      setResultado(null);
-    }
-  }, [isOpen, estudianteNombre, estudianteGeneracion]);
+    // Convertir monto de string a number si es necesario
+    const monto = typeof comprobante.monto === 'string' 
+      ? parseFloat(comprobante.monto) 
+      : Number(comprobante.monto);
 
-  const handleClose = () => {
-    setResultado(null);
-    onClose();
-  };
+    // Reconstruir datosExtraidos desde el comprobante
+    const datosExtraidos = {
+      numeroTransaccion: comprobante.numeroTransaccion || comprobante.documento || 'No encontrado',
+      monto: isNaN(monto) ? 0 : monto,
+      fecha: comprobante.fechaPago ? new Date(comprobante.fechaPago).toLocaleDateString('es-ES') : undefined,
+      nombreCuentaDestino: comprobante.cuentaDestino,
+    };
+
+    // Si hay imagen del comprobante, el pago es válido
+    const esValido = !!comprobante.urlImagen;
+    const mensaje = esValido
+      ? 'El pago ha sido confirmado y validado.'
+      : 'El pago no ha sido realizado o no coincide con el registro.';
+
+    return {
+      valido: esValido,
+      mensaje,
+      datosExtraidos,
+      // No tenemos coincidenciaExcel desde el comprobante, pero podemos intentar reconstruirla
+      coincidenciaExcel: comprobante.numeroTransaccion && estudianteNombre && estudianteGeneracion
+        ? {
+            estudiante: estudianteNombre,
+            generacion: estudianteGeneracion,
+            numeroTransaccion: comprobante.numeroTransaccion,
+            monto: monto,
+          }
+        : undefined,
+    };
+  }, [comprobante, estudianteNombre, estudianteGeneracion]);
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
+      onClose={onClose}
       title="Verificación de Comprobante"
       size="xl"
     >
@@ -70,31 +82,40 @@ export function ModalVerificacion({
           </p>
         </div>
 
-        {/* Loading */}
-        {loading && (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-            <p className="mt-2 text-gray-600">Cargando resultado de validación...</p>
+        {/* Imagen del comprobante */}
+        {comprobante?.urlImagen && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              Comprobante de Pago
+            </h3>
+            <div className="flex justify-center">
+              <img
+                src={comprobante.urlImagen}
+                alt="Comprobante de pago"
+                className="max-w-full h-auto rounded-lg shadow-md border border-gray-300"
+                style={{ maxHeight: '500px' }}
+              />
+            </div>
           </div>
         )}
 
         {/* Resultado de validación */}
-        {!loading && resultado ? (
+        {resultado ? (
           <div>
             <ResultadoValidacionComponent resultado={resultado} />
             <div className="mt-6 flex justify-end">
-              <Button variant="secondary" onClick={handleClose}>
+              <Button variant="secondary" onClick={onClose}>
                 Cerrar
               </Button>
             </div>
           </div>
-        ) : !loading && !resultado ? (
+        ) : (
           <Alert
             type="warning"
-            title="No hay resultado disponible"
+            title="No hay comprobante disponible"
             message="Este estudiante aún no ha subido un comprobante de pago o la validación no se ha completado."
           />
-        ) : null}
+        )}
       </div>
     </Modal>
   );

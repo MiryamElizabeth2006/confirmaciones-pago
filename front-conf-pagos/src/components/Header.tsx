@@ -7,16 +7,16 @@ import { Link, useLocation } from 'react-router-dom';
 import logoKrake from '@/assets/logoKrakePNG.png';
 
 interface HeaderProps {
-  activeTab?: 'subir' ;
+  activeTab?: 'subir' | 'admin';
 }
 
-export function Header({ activeTab = 'subir' }: HeaderProps) {
+export function Header({ activeTab }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
-  // Determinar activeTab basado en la ruta actual
-  const currentTab = location.pathname === '/admin' ? 'admin' : 'subir';
+  // Determinar activeTab basado en la ruta actual o usar el prop
+  const currentTab = activeTab || (location.pathname === '/admin' ? 'admin' : 'subir');
 
   // Cerrar menú al hacer clic fuera
   useEffect(() => {
@@ -55,12 +55,22 @@ export function Header({ activeTab = 'subir' }: HeaderProps) {
             <Link
               to="/estudiante"
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'subir'
+                currentTab === 'subir'
                   ? 'bg-red-700 text-white underline decoration-2 underline-offset-4'
                   : 'text-red-100 hover:bg-red-700 hover:text-white'
               }`}
             >
               Subir Pago
+            </Link>
+            <Link
+              to="/admin"
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                currentTab === 'admin'
+                  ? 'bg-red-700 text-white underline decoration-2 underline-offset-4'
+                  : 'text-red-100 hover:bg-red-700 hover:text-white'
+              }`}
+            >
+              Gestión de Pagos
             </Link>
           </nav>
 

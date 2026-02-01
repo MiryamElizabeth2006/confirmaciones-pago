@@ -132,4 +132,20 @@ export const apiClient = {
       },
     );
   },
+
+  /**
+   * GET /estudiantes/con-comprobantes
+   * Obtiene estudiantes que tienen comprobantes subidos (para tabla ADMIN)
+   */
+  async getEstudiantesConComprobantes() {
+    return request<import('@/types/api').EstudiantesConComprobantes>(
+      '/estudiantes/con-comprobantes',
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  },
 };

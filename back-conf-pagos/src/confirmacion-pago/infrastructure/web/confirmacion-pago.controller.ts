@@ -12,6 +12,7 @@ import { memoryStorage } from 'multer';
 import { ValidarPagoUseCase } from '../../application/use-cases/validar-pago.use-case';
 import { ObtenerOpcionesSelectUseCase } from '../../application/use-cases/obtener-opciones-select.use-case';
 import { GENERACIONES, type Generacion } from '../../domain/constants/generaciones';
+import { EstudiantesService } from '../../../estudiantes/estudiantes.service';
 
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 const ALLOWED_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -26,11 +27,18 @@ export class ConfirmacionPagoController {
   constructor(
     private readonly validarPagoUseCase: ValidarPagoUseCase,
     private readonly obtenerOpcionesSelectUseCase: ObtenerOpcionesSelectUseCase,
+    private readonly estudiantesService: EstudiantesService,
   ) {}
 
   @Get('opciones')
   async opciones() {
-    return this.obtenerOpcionesSelectUseCase.ejecutar();
+    // Obtener estudiantes desde Prisma
+    const nombresEstudiantes = await this.estudiantesService.obtenerNombres();
+    
+    return {
+      estudiantes: nombresEstudiantes,
+      generaciones: GENERACIONES,
+    };
   }
 
   @Post('validar')

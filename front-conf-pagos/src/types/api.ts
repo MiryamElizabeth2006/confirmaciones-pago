@@ -63,3 +63,58 @@ export interface HttpError {
   readonly message: string;
   readonly error: string;
 }
+
+/**
+ * Tipos para los nuevos endpoints de Prisma
+ */
+
+export interface Modulo {
+  readonly id: string;
+  readonly nombre: string;
+  readonly monto: number;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface ComprobantePago {
+  readonly id: string;
+  readonly estudianteId: string;
+  readonly moduloId: string;
+  readonly urlImagen: string;
+  readonly numeroTransaccion?: string;
+  readonly fechaPago: string;
+  readonly monto: number;
+  readonly cuentaDestino?: string;
+  readonly confirmacionPago: 'PENDIENTE' | 'REALIZADO' | 'NO_REALIZADO';
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly documento?: string;
+}
+
+export interface HistorialPago {
+  readonly id: string;
+  readonly estudianteId: string;
+  readonly moduloId: string;
+  readonly comprobanteId: string;
+  readonly montoAbonado: number;
+  readonly fechaAbono: string;
+  readonly createdAt: string;
+}
+
+export interface Estudiante {
+  readonly id: string;
+  readonly cedula: string;
+  readonly nombre: string;
+  readonly generacion: string;
+  readonly createdAt: string;
+  readonly moduloId: string;
+  readonly updatedAt: string;
+  readonly modulo: Modulo;
+  readonly comprobantes?: ComprobantePago[];
+  readonly pagos?: HistorialPago[];
+}
+
+/**
+ * Respuesta del endpoint GET /estudiantes/con-comprobantes
+ */
+export type EstudiantesConComprobantes = Estudiante[];

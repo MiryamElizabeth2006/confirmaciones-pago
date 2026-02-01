@@ -4,78 +4,62 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Estudiante {
-  id           String   @id @default(uuid()) @db.Uuid
-  cedula       String   @unique
+  id           String            @id @default(uuid()) @db.Uuid
+  cedula       String            @unique
   nombre       String
-  generacion   String   @default("Generación 3")
-
-  moduloId     String   @db.Uuid
-  modulo       Modulo   @relation(fields: [moduloId], references: [id])
-
+  generacion   String            @default("Generación 3")
+  createdAt    DateTime          @default(now())
+  moduloId     String            @db.Uuid
+  updatedAt    DateTime          @updatedAt
   comprobantes ComprobantePago[]
+  modulo       Modulo            @relation(fields: [moduloId], references: [id])
   pagos        HistorialPago[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 }
 
 model Modulo {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String            @id @default(uuid()) @db.Uuid
   nombre       String
-  monto        Decimal  @default(287.50) @db.Decimal(10,2)
-
-  estudiantes  Estudiante[]
+  monto        Decimal           @default(287.50) @db.Decimal(10, 2)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
   comprobantes ComprobantePago[]
+  estudiantes  Estudiante[]
   pagos        HistorialPago[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
 }
 
 model ComprobantePago {
-  id                String   @id @default(uuid()) @db.Uuid
-
-  estudianteId      String   @db.Uuid
-  moduloId          String   @db.Uuid
-
-  estudiante        Estudiante @relation(fields: [estudianteId], references: [id])
-  modulo            Modulo     @relation(fields: [moduloId], references: [id])
-
+  id                String             @id @default(uuid()) @db.Uuid
+  estudianteId      String             @db.Uuid
+  moduloId          String             @db.Uuid
   urlImagen         String
-
-  documento         String?
   numeroTransaccion String?
   fechaPago         DateTime
-  monto             Decimal   @db.Decimal(10,2)
+  monto             Decimal            @db.Decimal(10, 2)
   cuentaDestino     String?
-
   confirmacionPago  EstadoConfirmacion @default(PENDIENTE)
-
-  // 🔹 relación con los abonos generados por este comprobante
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  documento         String?
+  estudiante        Estudiante         @relation(fields: [estudianteId], references: [id])
+  modulo            Modulo             @relation(fields: [moduloId], references: [id])
   pagosGenerados    HistorialPago[]
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
 }
 
 model HistorialPago {
-  id             String   @id @default(uuid()) @db.Uuid
-
-  estudianteId   String   @db.Uuid
-  moduloId       String   @db.Uuid
-  comprobanteId  String   @db.Uuid
-
-  estudiante     Estudiante     @relation(fields: [estudianteId], references: [id])
-  modulo         Modulo         @relation(fields: [moduloId], references: [id])
-  comprobante    ComprobantePago @relation(fields: [comprobanteId], references: [id])
-
-  montoAbonado   Decimal  @db.Decimal(10,2)
-  fechaAbono     DateTime @default(now())
-
-  createdAt      DateTime @default(now())
+  id            String          @id @default(uuid()) @db.Uuid
+  estudianteId  String          @db.Uuid
+  moduloId      String          @db.Uuid
+  comprobanteId String          @db.Uuid
+  montoAbonado  Decimal         @db.Decimal(10, 2)
+  fechaAbono    DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+  comprobante   ComprobantePago @relation(fields: [comprobanteId], references: [id])
+  estudiante    Estudiante      @relation(fields: [estudianteId], references: [id])
+  modulo        Modulo          @relation(fields: [moduloId], references: [id])
 }
 
 enum EstadoConfirmacion {

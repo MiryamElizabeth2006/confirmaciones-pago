@@ -45,10 +45,18 @@ export class AwsTextractAdapter implements ExtraerDatosComprobantePort {
       },
     });
 
+    console.log('[AwsTextractAdapter] Iniciando extracción de datos del comprobante...');
     const response = await this.client.send(command);
     const textoCompleto = this.obtenerTextoDeBloques(response.Blocks ?? []);
-
-    return this.parsearComprobante(textoCompleto);
+    console.log('[AwsTextractAdapter] Texto extraído completo (primeros 1000 caracteres):', textoCompleto.substring(0, 1000));
+    const resultado = this.parsearComprobante(textoCompleto);
+    console.log('[AwsTextractAdapter] Datos extraídos:', {
+      numeroTransaccion: resultado.numeroTransaccion || 'NO ENCONTRADO',
+      monto: resultado.monto || 0,
+      fecha: resultado.fecha || 'NO ENCONTRADA',
+      nombreCuentaDestino: resultado.nombreCuentaDestino || 'NO ENCONTRADO',
+    });
+    return resultado;
   }
 
   private obtenerTextoDeBloques(blocks: Block[]): string {
@@ -70,12 +78,44 @@ export class AwsTextractAdapter implements ExtraerDatosComprobantePort {
     let fecha: string | undefined;
     let nombreCuentaDestino: string | undefined;
 
-    // Número de documento: "Documento: 50375023" o "Comprobante: 18354511" (puede estar en línea siguiente)
-    const docMatch = texto.match(
+    console.log('[AwsTextractAdapter] Texto extraído del OCR:', texto.substring(0, 500));
+
+    // Número de documento: múltiples patrones para mayor flexibilidad
+    // Patrón 1: "Documento: 50375023" o "Comprobante: 18354511"
+    let docMatch = texto.match(
       /(?:Documento|Comprobante)\s*:?\s*[\r\n]*\s*(\d+)/i,
     );
+    
+    // Patrón 2: "Número de transacción:" o "Número:" seguido de dígitos
+    if (!docMatch) {
+      docMatch = texto.match(
+        /(?:Número\s+(?:de\s+)?(?:transacción|comprobante|documento)|Número)\s*:?\s*[\r\n]*\s*(\d+)/i,
+      );
+    }
+    
+    // Patrón 3: Buscar cualquier secuencia de 6-10 dígitos después de palabras clave
+    if (!docMatch) {
+      docMatch = texto.match(
+        /(?:Transacción|Operación|Referencia)\s*:?\s*[\r\n]*\s*(\d{6,10})/i,
+      );
+    }
+    
+    // Patrón 4: Buscar números largos (6-10 dígitos) que puedan ser números de transacción
+    // pero solo si están cerca de palabras relacionadas con transacciones
+    if (!docMatch) {
+      const contextMatch = texto.match(
+        /(?:transferencia|pago|depósito|transacción)[\s\S]{0,100}?(\d{6,10})/i,
+      );
+      if (contextMatch) {
+        docMatch = contextMatch;
+      }
+    }
+
     if (docMatch) {
       numeroTransaccion = docMatch[1].trim();
+      console.log('[AwsTextractAdapter] Número de transacción encontrado:', numeroTransaccion);
+    } else {
+      console.warn('[AwsTextractAdapter] No se encontró número de transacción en el texto');
     }
 
     // Monto: después de "Efectivo", "Total" o "Monto" (ej: 287.50, $30.00)

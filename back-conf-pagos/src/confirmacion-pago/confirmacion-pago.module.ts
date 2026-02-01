@@ -7,13 +7,14 @@ import { AwsTextractAdapter } from './infrastructure/adapters/vision/aws-textrac
 import { OpenAIVisionAdapter } from './infrastructure/adapters/vision/openai-vision.adapter';
 import { MockVisionAdapter } from './infrastructure/adapters/vision/mock-vision.adapter';
 import { ExcelPagosAdapter } from './infrastructure/adapters/persistence/excel-pagos.adapter';
+import { EstudiantesModule } from '../estudiantes/estudiantes.module';
 import {
   EXTRAER_DATOS_COMPROBANTE_PORT,
   LEER_PAGOS_REGISTRADOS_PORT,
 } from './application/tokens';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, EstudiantesModule],
   controllers: [ConfirmacionPagoController],
   providers: [
     ValidarPagoUseCase,
