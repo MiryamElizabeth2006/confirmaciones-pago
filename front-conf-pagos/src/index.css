@@ -115,9 +115,9 @@ body {
 .main-content {
   flex: 1;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1rem;
 }
 
 /* Layout tipo dashboard minimalista */
@@ -408,35 +408,120 @@ body {
 
 .admin-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   margin-bottom: 1.5rem;
 }
 
+@media (max-width: 900px) {
+  .admin-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-stat-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 1rem;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
+  border: none;
+  border-radius: var(--radius);
+  padding: 0;
+  text-align: left;
+  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+}
+
+.admin-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.admin-stat-card.active {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.admin-stat-card-body {
+  position: relative;
+  padding: 1.25rem 1rem;
+  min-height: 5rem;
 }
 
 .admin-stat-card .admin-stat-value {
   display: block;
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: #fff;
+  line-height: 1.2;
 }
 
 .admin-stat-card .admin-stat-label {
-  font-size: 0.8125rem;
-  color: var(--color-text-muted);
+  display: block;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-top: 0.25rem;
 }
 
-.admin-stat-card.pendientes .admin-stat-value { color: #ed6c02; }
-.admin-stat-card.realizados .admin-stat-value { color: var(--color-success); }
-.admin-stat-card.no-realizados .admin-stat-value { color: var(--color-error); }
+.admin-stat-card .admin-stat-icon {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  opacity: 0.25;
+  color: #fff;
+  pointer-events: none;
+}
+
+.admin-stat-card-footer {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.admin-stat-card-total {
+  background: #2ca8b4;
+}
+
+.admin-stat-card-total .admin-stat-card-footer {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-stat-card-pendientes {
+  background: #f0ad4e;
+}
+
+.admin-stat-card-pendientes .admin-stat-value,
+.admin-stat-card-pendientes .admin-stat-label,
+.admin-stat-card-pendientes .admin-stat-card-footer {
+  color: #fff;
+}
+
+.admin-stat-card-pendientes .admin-stat-card-footer {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-stat-card-realizados {
+  background: #5cb85c;
+}
+
+.admin-stat-card-realizados .admin-stat-card-footer {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-stat-card-no-realizados {
+  background: #d9534f;
+}
+
+.admin-stat-card-no-realizados .admin-stat-card-footer {
+  background: rgba(0, 0, 0, 0.2);
+}
 
 .admin-toolbar {
   margin-bottom: 1rem;
@@ -482,6 +567,25 @@ body {
   border-bottom: 1px solid var(--color-border);
 }
 
+.admin-table .admin-cell-nowrap {
+  white-space: nowrap;
+}
+
+.admin-table th:nth-child(2),
+.admin-table td:nth-child(2) {
+  min-width: 7rem;
+}
+
+.admin-table th:nth-child(3),
+.admin-table td:nth-child(3) {
+  min-width: 6.5rem;
+}
+
+.admin-table th:nth-child(7),
+.admin-table td:nth-child(7) {
+  min-width: 8rem;
+}
+
 .admin-table th {
   font-weight: 600;
   color: var(--color-text);
@@ -519,9 +623,60 @@ body {
   min-width: 110px;
 }
 
-.admin-select-estado.pendiente { border-color: #ed6c02; color: #ed6c02; }
-.admin-select-estado.realizado { border-color: var(--color-success); color: var(--color-success); }
-.admin-select-estado.no_realizado { border-color: var(--color-error); color: var(--color-error); }
+/* Badge de estado (automático, con icono) */
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.estado-badge.realizado {
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--color-success);
+}
+
+.estado-badge.pendiente {
+  background: rgba(237, 108, 2, 0.12);
+  color: #ed6c02;
+}
+
+.estado-badge.no-realizado {
+  background: rgba(196, 30, 58, 0.1);
+  color: var(--color-error);
+}
+
+.admin-cell-generacion {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.admin-cell-monto {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.admin-cell-saldo {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.admin-cell-saldo.saldo-pendiente {
+  color: #ed6c02;
+}
+
+.admin-cell-saldo.saldo-cero {
+  color: var(--color-success);
+}
+
+.admin-sin-comprobante {
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
 
 .admin-link-imagen {
   color: var(--color-primary);

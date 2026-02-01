@@ -2,21 +2,22 @@ import { useState, useEffect, useCallback } from 'react'
 
 const API = '/api'
 
-type EstadoConfirmacion = 'PENDIENTE' | 'REALIZADO' | 'NO_REALIZADO'
+type Estado = 'PENDIENTE' | 'REALIZADO' | 'NO_REALIZADO'
 
-interface ComprobanteRow {
-  id: string
+interface ResumenEstudiante {
+  estudianteId: string
   estudiante: string
-  estudianteCedula: string
+  cedula: string
+  generacion: string
   modulo: string
   montoModulo: number
+  totalAbonado: number
+  saldoFaltante: number
+  cantidadComprobantes: number
+  estado: Estado
   numeroTransaccion: string | null
-  monto: number
-  fechaPago: string
-  cuentaDestino: string | null
-  confirmacionPago: EstadoConfirmacion
-  urlImagen: string
-  createdAt: string
+  urlImagen: string | null
+  fechaPago: string | null
 }
 
 interface Estadisticas {
@@ -26,6 +27,47 @@ interface Estadisticas {
   noRealizados: number
 }
 
+function IconoEstado({ estado }: { estado: Estado }) {
+  const config = {
+    REALIZADO: {
+      label: 'Realizado',
+      className: 'estado-badge realizado',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      ),
+    },
+    PENDIENTE: {
+      label: 'Pendiente',
+      className: 'estado-badge pendiente',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 6v6l4 2" />
+        </svg>
+      ),
+    },
+    NO_REALIZADO: {
+      label: 'No realizado',
+      className: 'estado-badge no-realizado',
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M15 9l-6 6M9 9l6 6" />
+        </svg>
+      ),
+    },
+  }
+  const c = config[estado]
+  return (
+    <span className={c.className} title={c.label}>
+      {c.icon}
+      <span>{c.label}</span>
+    </span>
+  )
+}
+
 export default function AdminDashboard({
   adminKey,
   onLogout,
@@ -33,91 +75,55 @@ export default function AdminDashboard({
   adminKey: string
   onLogout: () => void
 }) {
-  const [comprobantes, setComprobantes] = useState<ComprobanteRow[]>([])
+  const [filas, setFilas] = useState<ResumenEstudiante[]>([])
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null)
   const [estadoFiltro, setEstadoFiltro] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   const headers = () => ({ 'X-Admin-Key': adminKey })
 
-  const fetchComprobantes = useCallback(async () => {
+  const fetchResumen = useCallback(async () => {
     try {
-      const url = estadoFiltro
-        ? `${API}/admin/comprobantes?estado=${estadoFiltro}`
-        : `${API}/admin/comprobantes`
-      const res = await fetch(url, { headers: headers() })
+      const res = await fetch(`${API}/admin/resumen-estudiantes`, { headers: headers() })
       if (res.status === 401) {
         onLogout()
         return
       }
-      if (!res.ok) throw new Error('Error al cargar comprobantes')
-      const data = await res.json()
-      setComprobantes(data)
+      if (!res.ok) throw new Error('Error al cargar resumen')
+      const data: ResumenEstudiante[] = await res.json()
+      setFilas(data)
+      const pendientes = data.filter((r) => r.estado === 'PENDIENTE').length
+      const realizados = data.filter((r) => r.estado === 'REALIZADO').length
+      const noRealizados = data.filter((r) => r.estado === 'NO_REALIZADO').length
+      setEstadisticas({
+        total: data.length,
+        pendientes,
+        realizados,
+        noRealizados,
+      })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar')
-    }
-  }, [estadoFiltro, onLogout])
-
-  const fetchEstadisticas = useCallback(async () => {
-    try {
-      const res = await fetch(`${API}/admin/estadisticas`, { headers: headers() })
-      if (res.status === 401) {
-        onLogout()
-        return
-      }
-      if (!res.ok) return
-      const data = await res.json()
-      setEstadisticas(data)
-    } catch {
-      // ignore
     }
   }, [onLogout])
 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    Promise.all([fetchComprobantes(), fetchEstadisticas()]).finally(() =>
-      setLoading(false),
-    )
-  }, [fetchComprobantes, fetchEstadisticas])
+    fetchResumen().finally(() => setLoading(false))
+  }, [fetchResumen])
 
-  const cambiarConfirmacion = async (id: string, confirmacionPago: EstadoConfirmacion) => {
-    setUpdatingId(id)
-    try {
-      const res = await fetch(`${API}/admin/comprobantes/${id}/confirmacion`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          ...headers(),
-        },
-        body: JSON.stringify({ confirmacionPago }),
-      })
-      if (res.status === 401) {
-        onLogout()
-        return
-      }
-      if (!res.ok) throw new Error('Error al actualizar')
-      setComprobantes((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, confirmacionPago } : c)),
-      )
-      fetchEstadisticas()
-    } catch {
-      setError('Error al actualizar el estado.')
-    } finally {
-      setUpdatingId(null)
-    }
-  }
+  const filasFiltradas =
+    estadoFiltro === ''
+      ? filas
+      : filas.filter((f) => f.estado === estadoFiltro)
 
-  const formatDate = (s: string) => {
+  const formatDate = (s: string | null) => {
+    if (!s) return '—'
     try {
-      return new Date(s).toLocaleString('es', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      })
+      return new Date(s).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })
     } catch {
-      return s
+      return '—'
     }
   }
 
@@ -132,22 +138,75 @@ export default function AdminDashboard({
 
       {estadisticas && (
         <div className="admin-stats">
-          <div className="admin-stat-card">
-            <span className="admin-stat-value">{estadisticas.total}</span>
-            <span className="admin-stat-label">Total comprobantes</span>
-          </div>
-          <div className="admin-stat-card pendientes">
-            <span className="admin-stat-value">{estadisticas.pendientes}</span>
-            <span className="admin-stat-label">Pendientes</span>
-          </div>
-          <div className="admin-stat-card realizados">
-            <span className="admin-stat-value">{estadisticas.realizados}</span>
-            <span className="admin-stat-label">Realizados</span>
-          </div>
-          <div className="admin-stat-card no-realizados">
-            <span className="admin-stat-value">{estadisticas.noRealizados}</span>
-            <span className="admin-stat-label">No realizados</span>
-          </div>
+          <button
+            type="button"
+            className={`admin-stat-card admin-stat-card-total ${estadoFiltro === '' ? 'active' : ''}`}
+            onClick={() => setEstadoFiltro('')}
+          >
+            <div className="admin-stat-card-body">
+              <span className="admin-stat-value">{estadisticas.total}</span>
+              <span className="admin-stat-label">Total estudiantes</span>
+              <span className="admin-stat-icon" aria-hidden>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </span>
+            </div>
+            <div className="admin-stat-card-footer">Ver más →</div>
+          </button>
+          <button
+            type="button"
+            className={`admin-stat-card admin-stat-card-pendientes ${estadoFiltro === 'PENDIENTE' ? 'active' : ''}`}
+            onClick={() => setEstadoFiltro('PENDIENTE')}
+          >
+            <div className="admin-stat-card-body">
+              <span className="admin-stat-value">{estadisticas.pendientes}</span>
+              <span className="admin-stat-label">Pendientes</span>
+              <span className="admin-stat-icon" aria-hidden>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </span>
+            </div>
+            <div className="admin-stat-card-footer">Ver más →</div>
+          </button>
+          <button
+            type="button"
+            className={`admin-stat-card admin-stat-card-realizados ${estadoFiltro === 'REALIZADO' ? 'active' : ''}`}
+            onClick={() => setEstadoFiltro('REALIZADO')}
+          >
+            <div className="admin-stat-card-body">
+              <span className="admin-stat-value">{estadisticas.realizados}</span>
+              <span className="admin-stat-label">Realizados</span>
+              <span className="admin-stat-icon" aria-hidden>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                  <path d="M22 4L12 14.01l-3-3" />
+                </svg>
+              </span>
+            </div>
+            <div className="admin-stat-card-footer">Ver más →</div>
+          </button>
+          <button
+            type="button"
+            className={`admin-stat-card admin-stat-card-no-realizados ${estadoFiltro === 'NO_REALIZADO' ? 'active' : ''}`}
+            onClick={() => setEstadoFiltro('NO_REALIZADO')}
+          >
+            <div className="admin-stat-card-body">
+              <span className="admin-stat-value">{estadisticas.noRealizados}</span>
+              <span className="admin-stat-label">No realizados</span>
+              <span className="admin-stat-icon" aria-hidden>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M15 9l-6 6M9 9l6 6" />
+                </svg>
+              </span>
+            </div>
+            <div className="admin-stat-card-footer">Ver más →</div>
+          </button>
         </div>
       )}
 
@@ -170,62 +229,61 @@ export default function AdminDashboard({
       {error && <div className="admin-error-msg">{error}</div>}
 
       {loading ? (
-        <div className="loading">Cargando comprobantes…</div>
+        <div className="loading">Cargando estudiantes…</div>
       ) : (
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
               <tr>
                 <th>Estudiante</th>
+                <th>Generación</th>
                 <th>Módulo</th>
                 <th>Nº documento</th>
                 <th>Monto</th>
+                <th>Saldo faltante</th>
                 <th>Fecha pago</th>
-                <th>Confirmación</th>
+                <th>Estado</th>
                 <th>Comprobante</th>
               </tr>
             </thead>
             <tbody>
-              {comprobantes.length === 0 ? (
+              {filasFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="admin-table-empty">
-                    No hay comprobantes para mostrar.
+                  <td colSpan={9} className="admin-table-empty">
+                    No hay estudiantes para mostrar.
                   </td>
                 </tr>
               ) : (
-                comprobantes.map((c) => (
-                  <tr key={c.id}>
+                filasFiltradas.map((r) => (
+                  <tr key={r.estudianteId}>
                     <td>
-                      <div className="admin-cell-estudiante">{c.estudiante}</div>
-                      <div className="admin-cell-cedula">{c.estudianteCedula}</div>
+                      <div className="admin-cell-estudiante">{r.estudiante}</div>
+                      <div className="admin-cell-cedula">{r.cedula}</div>
                     </td>
-                    <td>{c.modulo}</td>
-                    <td>{c.numeroTransaccion ?? '—'}</td>
-                    <td>{c.monto.toFixed(2)}</td>
-                    <td>{formatDate(c.fechaPago)}</td>
+                    <td className="admin-cell-nowrap"><span className="admin-cell-generacion">{r.generacion}</span></td>
+                    <td className="admin-cell-nowrap">{r.modulo}</td>
+                    <td>{r.numeroTransaccion ?? '—'}</td>
+                    <td className="admin-cell-monto">{r.monto.toFixed(2)}</td>
+                    <td className={`admin-cell-saldo ${r.saldoFaltante > 0 ? 'saldo-pendiente' : 'saldo-cero'}`}>
+                      {r.saldoFaltante.toFixed(2)}
+                    </td>
+                    <td className="admin-cell-nowrap">{formatDate(r.fechaPago)}</td>
                     <td>
-                      <select
-                        value={c.confirmacionPago}
-                        onChange={(e) =>
-                          cambiarConfirmacion(c.id, e.target.value as EstadoConfirmacion)
-                        }
-                        disabled={updatingId === c.id}
-                        className={`admin-select-estado ${c.confirmacionPago.toLowerCase()}`}
-                      >
-                        <option value="PENDIENTE">Pendiente</option>
-                        <option value="REALIZADO">Realizado</option>
-                        <option value="NO_REALIZADO">No realizado</option>
-                      </select>
+                      <IconoEstado estado={r.estado} />
                     </td>
                     <td>
-                      <a
-                        href={`${API}/${c.urlImagen}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="admin-link-imagen"
-                      >
-                        Ver imagen
-                      </a>
+                      {r.urlImagen ? (
+                        <a
+                          href={`${API}/${r.urlImagen}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="admin-link-imagen"
+                        >
+                          Ver imagen
+                        </a>
+                      ) : (
+                        <span className="admin-sin-comprobante">—</span>
+                      )}
                     </td>
                   </tr>
                 ))
