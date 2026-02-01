@@ -74,6 +74,7 @@ model HistorialPago {
 
   montoAbonado   Decimal  @db.Decimal(10,2)
   fechaAbono     DateTime @default(now())
+  saldoFaltante  Decimal  @db.Decimal(10, 2)
 
   createdAt      DateTime @default(now())
 }
